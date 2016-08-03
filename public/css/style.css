@@ -9,14 +9,44 @@ body{
 	font-family: 'consolas';
 }
 
+.peg{
+	width: 4px;
+	height: 4px;
+	border-radius: 1px;
+	margin: 1px;
+}
+
+.peg__red{
+	background: #f44336;
+}
+.peg__green{
+	background: #4caf50;
+}
+.peg__blue{
+	background: #2196f3;
+}
+.peg__yellow{
+	background: #ffeb3b;
+}
+
 .cell{
+	box-sizing: border-box;
 	height: 50px;
 	width: 50px;
-	border: 1px solid #ddd;
-	background: #eee;
+	/*border: 1px solid #ddd;*/
+	background: transparent;
+	float: left;
 }
 
 .row{
-	
+	height: 50px;
+	width: 500px; /* Make it dynamic*/
+	background: transparent;
 }
 
+.grid{
+	width: 500px; /* Make it dynamic*/
+	border:1px solid #ddd;
+	/*Image reference: http://www.simplyplaygrounds.co.uk/console/upload/13800177131---100-Snakes-and-Ladders-2.jpg*/
+	background: url('../img/board.jpg') no-repeat center center;
+}
