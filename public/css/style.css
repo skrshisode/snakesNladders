@@ -47,7 +47,7 @@ body{
 .grid{
 	width: 500px; /* Make it dynamic*/
 	border:1px solid #ddd;
-	/*Image reference: http://www.simplyplaygrounds.co.uk/console/upload/13800177131---100-Snakes-and-Ladders-2.jpg*/
+	/*Image reference: https://s-media-cache-ak0.pinimg.com/736x/03/c3/ab/03c3ab693eedcd84c1119a947974cb93.jpg*/
 	background: url('../img/board.jpg') no-repeat center center;
 	margin: 10px;
 	float: left;
