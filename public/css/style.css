@@ -1,0 +1,22 @@
+/* html{
+	height: 100%;
+	width: 100%;
+} */
+
+body{
+	/* height: 100%;
+	width: 100%; */
+	font-family: 'consolas';
+}
+
+.cell{
+	height: 50px;
+	width: 50px;
+	border: 1px solid #ddd;
+	background: #eee;
+}
+
+.row{
+	
+}
+
