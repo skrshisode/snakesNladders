@@ -16,6 +16,10 @@
 			// constructor body
 			this.name = name;
 			var _position = 0;
+			var _nThrows = 0;
+			var _sixCount = 0;
+			var _nLaddersClimbed = 0;
+			var _nSnakeEncountered = 0;
 			this.setPosition = function(position){
 				_position = position;
 			};
