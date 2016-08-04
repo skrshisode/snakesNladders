@@ -3,56 +3,6 @@
  * Version: 0.0.0
  */
 
-let Player = (function() {
-	'use strict';
-
-	function Player(name) {
-		// enforces new
-		if (!(this instanceof Player)) {
-			return new Player(name);
-		}
-		// constructor body
-		this.name = name;
-		var _position = 0;
-		var _nThrows = 0;
-		var _sixCount = 0;
-		var _nLaddersClimbed = 0;
-		var _nSnakeEncountered = 0;
-		this.setPosition = function(position){
-			_position = position;
-		};
-		this.getPosition = function() {
-			return _position;
-		};
-		this.incrementThrowCount = function(){
-			_nThrows++;
-		};
-		this.getThrowCount = function(){
-			return _nThrows;
-		};
-		this.incrementSixCount = function(){
-			_sixCount++;
-		};
-		this.getSixCount = function(){
-			return _sixCount;
-		};
-		this.incrementLadderClimbedCount = function(){
-			_nLaddersClimbed++;
-		};
-		this.getLadderClimbedCount = function(){
-			return _nLaddersClimbed;
-		};
-		this.incrementSnakeEncounterCount = function(){
-			_nSnakeEncountered++;
-		};
-		this.getSnakeEncounterCount = function(){
-			return _nSnakeEncountered;
-		};
-	}
-
-	return Player;
-}());
-
 let Snake = (function() {
 	'use strict';
 	function Snake(head, tail) {
@@ -136,6 +86,10 @@ let Ladder = (function() {
 	return Ladder;
 }());
 
+/*
+Issue: Bad practice. Can be made part of state instead of global variable.
+ */
+
 let snakes = new Array();
 snakes.push(new Snake(16,6));
 snakes.push(new Snake(46,25));
@@ -160,7 +114,112 @@ ladders.push(new Ladder(51,67));
 ladders.push(new Ladder(71,91));
 ladders.push(new Ladder(78,98));
 ladders.push(new Ladder(87,94));
-	
+
+let Player = (function() {
+	'use strict';
+
+	function Player(name) {
+		// enforces new
+		if (!(this instanceof Player)) {
+			return new Player(name);
+		}
+		// constructor body
+		this.name = name;
+		var _position = 0;
+		var _nThrows = 0;
+		var _sixCount = 0;
+		var _nLaddersClimbed = 0;
+		var _nSnakeEncountered = 0;
+		this.setPosition = function(position){
+			_position = position;
+		};
+		this.getPosition = function() {
+			return _position;
+		};
+		this.incrementThrowCount = function(){
+			_nThrows++;
+		};
+		this.getThrowCount = function(){
+			return _nThrows;
+		};
+		this.incrementSixCount = function(){
+			_sixCount++;
+		};
+		this.getSixCount = function(){
+			return _sixCount;
+		};
+		this.incrementLadderClimbedCount = function(){
+			_nLaddersClimbed++;
+		};
+		this.getLadderClimbedCount = function(){
+			return _nLaddersClimbed;
+		};
+		this.incrementSnakeEncounterCount = function(){
+			_nSnakeEncountered++;
+		};
+		this.getSnakeEncounterCount = function(){
+			return _nSnakeEncountered;
+		};
+	}
+
+	Player.prototype.bestThrows = function(position){
+		let bestThrows = [];
+
+		let snakes = arguments[1];
+		let ladders = arguments[2];
+
+		if(!snakes || !ladders){
+			console.warn("Pass necessary parameters. e.g. snakes,ladders,etc.");
+			return [];
+		}
+
+		let visited = [];
+		let i = 0;
+		
+		for (i = 0; i < 100; i++) {
+			visited[i] = false;
+		}
+
+		let queue = []; // JS queue using array's Array.prototype.shift() method
+
+		queue.push(position-1);
+
+		while(queue.length > 0){
+			let currentPosition = queue.shift();
+
+			if(currentPosition==99) break;
+
+			for(i = currentPosition+1; (i <= currentPosition+6) && (i < 100); i++){
+				if(!visited[i]){
+					visited[i] = true;
+
+					let connectionFlag = false; 
+					snakes.forEach(function(snake){
+						if(i == snake.getHead()){
+							connectionFlag = true;
+							queue.push(snake.getTail());
+						}
+					});
+					ladders.forEach(function(ladder){
+						if(i == ladder.getBottom()){
+							connectionFlag = true;
+							queue.push(ladder.getTop());
+						}
+					});
+
+					if(!connectionFlag){
+						queue.push(i);
+						bestThrows.push(i-currentPosition);
+					}
+				}
+			}
+		}
+		return bestThrows;
+	}
+
+	return Player;
+}());
+
 const Peg = React.createClass({
 	render: function() {
 		const types = ["peg__red","peg__green","peg__blue","peg__yellow"];
@@ -267,7 +326,7 @@ const GameBoard = React.createClass({
 			alert("Please select the mode!")
 		}else if(gameMode==="multiPlayer"){
 			this.setState({
-				status: 2,
+				status: 1,
 				notification: "Multiplayer game started",
 				nPlayers: 4,
 				multiplayer: true,
@@ -337,14 +396,16 @@ const GameBoard = React.createClass({
 		});
 
 		if(dice==6 && sixR < 3){
+			console.log("Best throws for "+pegs[i].name+": "+pegs[i].bestThrows(pegs[i].getPosition(),snakes,ladders).toString());
 			sixR++;
 			this.setState({
-				notification: pegs[i].name+' got extra chance',
+				notification: pegs[i].name+" got extra chance",
 				pegs: pegs,
 				sixRepeated: sixR
 			})
 		}else{
 			i = ++i%N; // Round robin
+			console.log("Best throws for "+pegs[i].name+": "+pegs[i].bestThrows(pegs[i].getPosition(),snakes,ladders).toString());
 			let info = pegs[i].name+"'s turn";
 			if(pegs[i].name==="CPU"){
 				info += ". Please wait...";
@@ -403,7 +464,7 @@ const GameBoard = React.createClass({
 			});
 			return (
 				<div className="scoreboard">
-					<p>Who is winner? Hit refresh to restart the game!</p>
+					<p style={{textAlign:'center'}}>{pegs[pegs.map(function(p){return p.getPosition()}).indexOf(100)].name} won the game. Hit refresh to restart the game!</p>
 					{scorecards}
 				</div>
 			);
@@ -420,7 +481,7 @@ const GameBoard = React.createClass({
 				<Grid size={10} pegs={this.state.pegs} />
 				<Dice value={this.state.dice} throwDice={this.updateDice}/>
 				<div className="indicators__block">
-					<p> Pegs - <br/> {pegsType} </p>
+					<p> Pegs - </p><br/> {pegsType}
 				</div>
 			</div>
 		);
@@ -435,8 +496,6 @@ ReactDOM.render( <GameBoard /> ,
  * Reverse mapping:
  *
  * j = 9 - parseInt((position-1)/10); i = (j%2==0)? 9-((position-1)-(9-j)*10):(position-1)-(9-j)*10;
- *
- * <p style={{textAlign:'center'}}>{pegs[pegs.map(function(p){return p.getPosition()}).indexOf(100)].name} won the game! </p>
  * 
  */
  
