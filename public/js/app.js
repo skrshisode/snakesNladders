@@ -1,36 +1,57 @@
 /**
  * Snakes and Ladders game
- * Author: Sushilkumar Shisode
  * Version: 0.0.0
  */
 
-/*	
-	let Player = (function() {
-		'use strict';
+let Player = (function() {
+	'use strict';
 
-		function Player(name) {
-			// enforces new
-			if (!(this instanceof Player)) {
-				return new Player(name);
-			}
-			// constructor body
-			this.name = name;
-			var _position = 0;
-			var _nThrows = 0;
-			var _sixCount = 0;
-			var _nLaddersClimbed = 0;
-			var _nSnakeEncountered = 0;
-			this.setPosition = function(position){
-				_position = position;
-			};
-			this.getPosition = function() {
-				return _position;
-			};
+	function Player(name) {
+		// enforces new
+		if (!(this instanceof Player)) {
+			return new Player(name);
 		}
+		// constructor body
+		this.name = name;
+		var _position = 0;
+		var _nThrows = 0;
+		var _sixCount = 0;
+		var _nLaddersClimbed = 0;
+		var _nSnakeEncountered = 0;
+		this.setPosition = function(position){
+			_position = position;
+		};
+		this.getPosition = function() {
+			return _position;
+		};
+		this.incrementThrowCount = function(){
+			_nThrows++;
+		};
+		this.getThrowCount = function(){
+			return _nThrows;
+		};
+		this.incrementSixCount = function(){
+			_sixCount++;
+		};
+		this.getSixCount = function(){
+			return _sixCount;
+		};
+		this.incrementLadderClimbedCount = function(){
+			_nLaddersClimbed++;
+		};
+		this.getLadderClimbedCount = function(){
+			return _nLaddersClimbed;
+		};
+		this.incrementSnakeEncounterCount = function(){
+			_nSnakeEncountered++;
+		};
+		this.getSnakeEncounterCount = function(){
+			return _nSnakeEncountered;
+		};
+	}
 
-		return Player;
-	}());
-*/
+	return Player;
+}());
 
 let Snake = (function() {
 	'use strict';
@@ -56,20 +77,19 @@ let Snake = (function() {
 			return _tail;
 		}
 	}
-
-/*		
+		
 	Snake.prototype.eat = function(player) {
 		if (player instanceof Player) {
-			if (this._head != player.getPosition()) throw Error("Position mismatch");
+			if (this.getHead() != player.getPosition()) throw Error("Position mismatch");
 
 			console.log("Snake bit %s", player.name);
-			console.log(player.name, " moving down to: %d", this._tail);
-			player.setPosition(this._tail);
+			console.log(player.name," moving down to: ", this.getTail());
+			player.setPosition(this.getTail());
+			player.incrementSnakeEncounterCount();
 		} else {
 			throw Error("Snake only eats Player");
 		}
 	};
-*/
 
 	return Snake;
 }());
@@ -100,19 +120,18 @@ let Ladder = (function() {
 		}
 	}
 
-/*		
 	Ladder.prototype.letClimb = function(player) {
 		if (player instanceof Player) {
-			if (this._bottom != player.getPosition()) throw Error("Position mismatch");
+			if (this.getBottom() != player.getPosition()) throw Error("Position mismatch");
 
 			console.log("Player %s got ladder", player.name);
-			console.log(player.name, " moving up to: %d", this._top);
-			player.setPosition(this._top);
+			console.log(player.name," moving up to: ", this.getTop());
+			player.setPosition(this.getTop());
+			player.incrementLadderClimbedCount();
 		} else {
 			throw Error("Ladder only lets Player to climb");
 		}
 	};
-*/
 
 	return Ladder;
 }());
@@ -152,7 +171,6 @@ const Peg = React.createClass({
 	},
 });
 
-// Issue: How to handle overlapping pegs in a Cell? i.e. duplicates in pegs array
 const Cell = React.createClass({
 	render: function() {
 		const col = this.props.colId;
@@ -160,7 +178,21 @@ const Cell = React.createClass({
 		const size = this.props.size;
 		const pegs = this.props.pegs;
 		const position = (row%2 == 0) ? (size-1-row)*10+(size-1-col)+1 : (size-1-row)*10+col+1;
-		return pegs.includes(position) ? (<div className="cell"><Peg pegNumber={pegs.indexOf(position)}/></div>):(<div className="cell"></div>);	
+		let renderPegs = [];
+		let positionDuplicates = [];
+		let i;
+		for (i = 0; i < pegs.length; i++) {
+			if(pegs[i].getPosition()==position){
+				positionDuplicates.push(i);
+			}
+		}
+		let j=0;
+		positionDuplicates.forEach(function(peg){
+			renderPegs.push(<Peg key={j} pegNumber={positionDuplicates[j]}/>);
+			j++;
+		});
+
+		return pegs.map(function(p){return p.getPosition()}).includes(position) ? (<div className="cell">{renderPegs}</div>):(<div className="cell"></div>);	
 	},
 });
 
@@ -213,8 +245,8 @@ const GameBoard = React.createClass({
 			notification: "Game is about to start",
 			nPlayers: 2,
 			multiplayer: false,
-			dice: '?',
-			pegs: [0,0],
+			dice: 'Play!',
+			pegs: [new Player("Player"),new Player("CPU")],
 			activePlayer: 0,
 			sixRepeated: 0,
 		};
@@ -235,11 +267,11 @@ const GameBoard = React.createClass({
 			alert("Please select the mode!")
 		}else if(gameMode==="multiPlayer"){
 			this.setState({
-				status: 1,
+				status: 2,
 				notification: "Multiplayer game started",
 				nPlayers: 4,
 				multiplayer: true,
-				pegs: [0,0,0,0],
+				pegs: [new Player("Player 1"),new Player("Player 2"),new Player("Player 3"),new Player("Player 4")],
 			});
 		}else{
 			this.setState({
@@ -251,64 +283,93 @@ const GameBoard = React.createClass({
 	updateDice: function() {
 		const number = Math.round((Math.random() * 5)) + 1;
 		this.setState({
-			notification: "Dice thrown",
 			dice: number,
 		});
 		this.updatePegPosition(number);
 	},
 	updatePegPosition: function(movement) {
 		const i = this.state.activePlayer;
-		let positions = this.state.pegs;
-		positions[i] =  positions[i]+movement;
+		let pegs = this.state.pegs;
+		const difference = 100-pegs[i].getPosition();
+
+		pegs[i].incrementThrowCount();
+		if(movement==6){
+			pegs[i].incrementSixCount();
+		}
 
 		// Position should not exceed 100
-		// If reach 95, then throw 5
-
-		// if(movement==6){
-
-		// }else{
-
-		// }
-		this.setState({
-			pegs: positions
-		});
-		this.updateGame();
+		// e.g. If reach 95, then throw 5
+		if(difference <= 6){
+			if(difference==movement){
+				pegs[i].setPosition(pegs[i].getPosition()+movement);
+				this.setState({
+					pegs: pegs,
+					status: 2,
+				});
+			}else{
+			 	/* Issue: Bad practice. Alternative: Implement queue for notification to support multiple messages*/
+			 	alert(pegs[i].name+" should throw "+difference+" to win the game");
+			}
+		}else{
+			pegs[i].setPosition(pegs[i].getPosition()+movement);
+			this.setState({
+				pegs: pegs
+			});
+		}
+		this.updateGame(movement);
 	},
-	updateGame: function(){
+	updateGame: function(dice){
 		const N = this.state.nPlayers;
 		const mode  = this.state.multiplayer;
-		const dice = this.state.dice;
+
 		let pegs = this.state.pegs;
 		let i = this.state.activePlayer;
 		let sixR = this.state.sixRepeated;
 
 		snakes.forEach(function(snake) {
-			if(snake.getHead() == pegs[i]) pegs[i] = snake.getTail();
+			// if(snake.getHead() == pegs[i].getPosition()) pegs[i].setPosition(snake.getTail());
+			if(snake.getHead() == pegs[i].getPosition()) snake.eat(pegs[i]);
 		});
 
 		ladders.forEach(function(ladder) {
-			if(ladder.getBottom() == pegs[i]) pegs[i] = ladder.getTop();
+			// if(ladder.getBottom() == pegs[i].getPosition()) pegs[i].setPosition(ladder.getTop());
+			if(ladder.getBottom() == pegs[i].getPosition()) ladder.letClimb(pegs[i]);
 		});
 
 		if(dice==6 && sixR < 3){
 			sixR++;
 			this.setState({
-				notification: 'Player '+i+' got extra chance',
+				notification: pegs[i].name+' got extra chance',
 				pegs: pegs,
 				sixRepeated: sixR
 			})
 		}else{
 			i = ++i%N; // Round robin
+			let info = pegs[i].name+"'s turn";
+			if(pegs[i].name==="CPU"){
+				info += ". Please wait...";
+			}
 			this.setState({
-				notification: 'Player '+i+' gets the chance',
+				notification: info,
 				pegs: pegs,
 				activePlayer: i,
 				sixRepeated: 0
-			})
+			});
+		}
+
+		// Simulate CPU's turn
+		if(i==1 && !mode){
+			let self = this;
+			setTimeout(function() {
+				self.updateDice();
+			},3000);
 		}
 	},
 	render: function() {
-		if(this.state.status===0){
+		const status = this.state.status;
+		const pegs = this.state.pegs;
+
+		if(status===0){
 			return (
 				<div className="intro">
 					<p style={{textAlign:'center'}}>
@@ -325,11 +386,42 @@ const GameBoard = React.createClass({
 			);
 		}
 
+		if(status===2){
+			let scorecards = [];
+			pegs.forEach(function(peg){
+				scorecards.push(
+							<div key={peg.name} className="scorecard">
+								<h5 style={{textAlign:'center'}}>{peg.name} ( Score: {peg.getPosition()})</h5>
+								<p style={{textAlign:'center'}}>
+									Throws: {peg.getThrowCount()} <br/>
+									Sixers: {peg.getSixCount()} <br/>
+									Ladders climbed: {peg.getLadderClimbedCount()} <br/>
+									Snakes encountered: {peg.getSnakeEncounterCount()}
+								</p>
+							</div>
+						);
+			});
+			return (
+				<div className="scoreboard">
+					<p>Who is winner? Hit refresh to restart the game!</p>
+					{scorecards}
+				</div>
+			);
+		}
+
+		let pegsType = [];
+		pegs.forEach(function(peg){
+			pegsType.push(<div key={pegs.indexOf(peg)} className="display__peg__type"> <Peg pegNumber={pegs.indexOf(peg)}/> : {peg.name} ({peg.getPosition()})</div>);
+		});
+
 		return (
 			<div className="gameboard">
 				<p style={{textAlign:'center'}}>{this.state.notification}</p>
 				<Grid size={10} pegs={this.state.pegs} />
 				<Dice value={this.state.dice} throwDice={this.updateDice}/>
+				<div className="indicators__block">
+					<p> Pegs - <br/> {pegsType} </p>
+				</div>
 			</div>
 		);
 	},
@@ -343,6 +435,8 @@ ReactDOM.render( <GameBoard /> ,
  * Reverse mapping:
  *
  * j = 9 - parseInt((position-1)/10); i = (j%2==0)? 9-((position-1)-(9-j)*10):(position-1)-(9-j)*10;
+ *
+ * <p style={{textAlign:'center'}}>{pegs[pegs.map(function(p){return p.getPosition()}).indexOf(100)].name} won the game! </p>
  * 
  */
  
